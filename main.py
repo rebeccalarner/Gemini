@@ -35,8 +35,11 @@ def create_database():
         base_currency TEXT,
         quote_currency TEXT,
         timestamp INTEGER,
+        tid INTEGER,
         price REAL,
         amount REAL,
+        exchange TEXT,
+        type  TEXT,
         f_upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );""")
 
@@ -46,6 +49,15 @@ def create_database():
 
 def fetch_ticker(base_currency='btc', quote_currency='usd'):
     endpoint = f"https://api.gemini.com/v1/pubticker/{base_currency}{quote_currency}"
+    response = requests.get(endpoint)
+    if response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        return f"Error: {response.status_code}"
+
+
+def fetch_symbols():
+    endpoint = f"https://api.gemini.com/v1/symbols"
     response = requests.get(endpoint)
     if response.status_code == 200:
         return json.loads(response.text)
@@ -92,9 +104,9 @@ def save_to_database(data, data_type, base_currency, quote_currency):
     elif data_type == "trade_history":
         for trade in data:
             cursor.execute("""
-            INSERT INTO TradeHistory (base_currency, quote_currency, timestamp, price, amount)
-            VALUES (?, ?, ?, ?, ?);
-            """, (base_currency, quote_currency, trade['timestamp'], trade['price'], trade['amount']))
+            INSERT INTO TradeHistory (base_currency, quote_currency, timestamp, tid, price, amount, exchange, type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            """, (base_currency, quote_currency, trade['timestamp'], trade['tid'], trade['price'], trade['amount'], trade['exchange'], trade['type']))
 
     conn.commit()
     conn.close()
